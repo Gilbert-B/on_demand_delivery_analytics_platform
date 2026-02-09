@@ -7,7 +7,7 @@ Purpose:
  Assumptions:
  - order_id uniquely identifies an order
  - orders table is mutable (status over written)
- - delivered_as may beNULL for cancelled/in_progress orders
+ - delivered_at may beNULL for cancelled/in_progress orders
  - monetary values are stored at the order header level 
  */
 
@@ -20,7 +20,7 @@ Purpose:
         o.driver_id, 
 
         --timestamps
-        o.vreated_at,
+        o.created_at,
         o.delivered_at,
         o.cancelled_at,
 
@@ -42,24 +42,29 @@ Purpose:
 
         CASE
             WHEN o.delivered_at IS NOT NULL THEN TRUE
-            ESLE FALSE
+            ELSE FALSE
         END AS is_delivered
+
+
+        -- lineage / observability (placeholders until ingestion exists)
+        /* These should be populated by the ingestion process in Phase 2 */
+        NULL::timestamp AS ingested_at,
+        NULL::date      AS source_snapshot_date
 
 FROM public_orders o;
 
 
 /*
 Data Quality Notes:
-- If driver_id is NULL, order was never assigend or assignement failed
-- delivered_at is unreliable for late delivery metrics without status events 
-- monetary fields assume header level cons9stency 
+- If driver_id is NULL, order was never assigned or assignment failed.
+- delivered_at is unreliable for late delivery metrics without status events.
+- monetary fields assume header-level consistency.
 
 Risks:
-- Mutable Orders table hides time_in_status
-_ DIscounts may be applied at item level inside JSON 
+- Mutable orders table hides time-in-status.
+- Discounts may be applied at item level inside JSON (future work).
 
-Next Steps :
-
-- Validate columns during EDA once data ius loaded 
-- Replace stust logic with event_based duratiopns
+Next Steps:
+- Validate columns during EDA once data is loaded.
+- Replace status-based timing with event-based durations (fact_order_status_event).
 */
