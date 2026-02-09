@@ -46,3 +46,20 @@ Purpose:
         END AS is_delivered
 
 FROM public_orders o;
+
+
+/*
+Data Quality Notes:
+- If driver_id is NULL, order was never assigend or assignement failed
+- delivered_at is unreliable for late delivery metrics without status events 
+- monetary fields assume header level cons9stency 
+
+Risks:
+- Mutable Orders table hides time_in_status
+_ DIscounts may be applied at item level inside JSON 
+
+Next Steps :
+
+- Validate columns during EDA once data ius loaded 
+- Replace stust logic with event_based duratiopns
+*/
