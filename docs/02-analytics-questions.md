@@ -1,4 +1,5 @@
 Operations (Efficiency & Fulfillment)
+
 1. Which specific restaurants have the highest 'Driver Wait Time'?"
  (Are drivers standing around for 20 minutes while food is prepped, killing our network efficiency?)
 
@@ -9,6 +10,7 @@ Operations (Efficiency & Fulfillment)
 4. "What is the cancellation rate after food is prepared?" (This is pure waste—who pays for the wasted food, us or the vendor?)
 
 Finance (Profitability & Reconciliation)
+
 5. "What is our true Net Revenue per order after subtracting driver payouts and refunds?" (Are we actually making money on small orders, or are the margins negative?)
 
 6. "Which orders have a discrepancy between the 'App Price' and the 'Payment Gateway Settlement'?" (Did the user pay GHS 50 but the bank only settled GHS 45? Where is the leak?)
@@ -18,6 +20,7 @@ Finance (Profitability & Reconciliation)
 8. "How much are we spending on 'Driver Surge' bonuses vs. the extra fees we collected from customers?" (Are our subsidies sustainable?)
 
 Management (Growth & Retention)
+
 9. "What is the Month-1 Retention Rate for new customers acquired via Instagram ads?" (Do they order once and leave, or do they become regulars?)
 
 10. "Which 'Cuisine Types' are trending down in order volume over the last 3 months?" (Should we stop onboarding more Pizza places and look for Local Food vendors instead?)
