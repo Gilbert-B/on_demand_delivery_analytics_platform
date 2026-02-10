@@ -38,15 +38,16 @@ WITH src AS (
 
 cleaned AS (
     SELECT
-        -- normalize dates
         settlement_date::date AS settlement_date,
 
-        -- normalize reference:
-        -- 1) trim
-        -- 2) remove leading '#'
-        -- 3) treat empty string as NULL
+        -- normalize reference: trim, remove leading '#', remove internal spaces
         NULLIF(
-            REGEXP_REPLACE(TRIM(reference_raw), '^#', ''),
+            REGEXP_REPLACE(
+                REGEXP_REPLACE(UPPER(TRIM(reference_raw)), '^#', ''),
+                '\s+',
+                '',
+                'g'
+            ),
             ''
         ) AS reference_clean,
 
@@ -54,22 +55,23 @@ cleaned AS (
         NULLIF(TRIM(transaction_type_raw), '') AS transaction_type,
         NULLIF(TRIM(currency_raw), '') AS currency,
 
-        -- normalize numeric values:
-        -- remove commas and any non-numeric symbols except '.' and '-'
+        -- strip to text first (safer + reusable)
+        NULLIF(REGEXP_REPLACE(TRIM(gross_raw::text), '[^0-9\.\-]', '', 'g'), '') AS gross_amount_text,
+        NULLIF(REGEXP_REPLACE(TRIM(fee_raw::text),   '[^0-9\.\-]', '', 'g'), '') AS processor_fee_text,
+        NULLIF(REGEXP_REPLACE(TRIM(net_raw::text),   '[^0-9\.\-]', '', 'g'), '') AS net_amount_text,
+
+        -- cast once
         NULLIF(REGEXP_REPLACE(TRIM(gross_raw::text), '[^0-9\.\-]', '', 'g'), '')::numeric AS gross_amount,
         NULLIF(REGEXP_REPLACE(TRIM(fee_raw::text),   '[^0-9\.\-]', '', 'g'), '')::numeric AS processor_fee,
         NULLIF(REGEXP_REPLACE(TRIM(net_raw::text),   '[^0-9\.\-]', '', 'g'), '')::numeric AS net_amount,
 
-        -- detect refunds (best-effort):
-        -- if transaction_type says refund OR net is negative OR gross is negative
         CASE
             WHEN LOWER(COALESCE(transaction_type_raw, '')) LIKE '%refund%' THEN TRUE
-            WHEN (NULLIF(REGEXP_REPLACE(TRIM(net_raw::text), '[^0-9\.\-]', '', 'g'), '')::numeric) < 0 THEN TRUE
-            WHEN (NULLIF(REGEXP_REPLACE(TRIM(gross_raw::text), '[^0-9\.\-]', '', 'g'), '')::numeric) < 0 THEN TRUE
+            WHEN NULLIF(REGEXP_REPLACE(TRIM(net_raw::text), '[^0-9\.\-]', '', 'g'), '')::numeric < 0 THEN TRUE
+            WHEN NULLIF(REGEXP_REPLACE(TRIM(gross_raw::text), '[^0-9\.\-]', '', 'g'), '')::numeric < 0 THEN TRUE
             ELSE FALSE
         END AS is_refund,
 
-        -- stable settlement row id (idempotent loads)
         md5(
             concat_ws(
                 '|',
@@ -81,27 +83,9 @@ cleaned AS (
             )
         ) AS settlement_line_id,
 
-        -- lineage
         source_file,
         source_row_number,
         ingested_at
-
     FROM src
 )
 
-SELECT
-    settlement_line_id,
-    settlement_date,
-    reference_raw,
-    reference_clean,
-    transaction_id,
-    transaction_type,
-    currency,
-    gross_amount,
-    processor_fee,
-    net_amount,
-    is_refund,
-    source_file,
-    source_row_number,
-    ingested_at
-FROM cleaned;
