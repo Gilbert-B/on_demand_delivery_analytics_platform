@@ -21,7 +21,7 @@ WITH src AS (
         vendor_id,
         vendor_name,
         cuisine_type,
-        commission_rate AS commission_rate_raw,
+        commission_rate:: text AS commission_rate_raw,
         neighborhood    AS neighborhood_raw,
         updated_at      AS source_updated_at,
 
@@ -62,7 +62,7 @@ standardized AS (
 
         -- basic neighborhood canonicalization (final mapping table comes next)
         LOWER(
-            REGEXP_REPLACE(TRIM(neighborhood_raw), '[^a-zA-Z0-9 ]', '', 'g')
+            REGEXP_REPLACE(COALESCE(TRIM(neighborhood_raw), ''),'[^a-zA-Z0-9 ]', '', 'g')
         ) AS neighborhood_normalized,
 
         source_updated_at,
