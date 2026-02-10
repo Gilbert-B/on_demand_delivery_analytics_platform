@@ -63,6 +63,12 @@ matched AS (
             ELSE NULL
         END AS net_discrepancy_amount,
 
+        CASE
+            WHEN s.reference_clean IS NOT NULL AND o.order_id IS NOT NULL THEN 'HIGH'
+            ELSE 'NONE'
+        END AS match_confidence,
+
+
         s.source_file,
         s.source_row_number,
         s.ingested_at
