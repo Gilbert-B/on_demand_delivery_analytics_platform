@@ -71,15 +71,37 @@ movement AS (
         MIN(ping_ts) AS first_ping_ts,
         MAX(ping_ts) AS last_ping_ts,
 
-        -- use a simple proxy: if only one ping, movement is 0
-        -- true distance calc will be added later (Haversine / geography)
-        CASE
-            WHEN COUNT(ping_ts) <= 1 THEN 0::numeric
-            ELSE 1::numeric  -- placeholder for "has movement"
-        END AS movement_proxy
+        -- first/last coordinates in the window
+        (ARRAY_AGG(latitude  ORDER BY ping_ts ASC))[1]  AS first_lat,
+        (ARRAY_AGG(longitude ORDER BY ping_ts ASC))[1]  AS first_lon,
+        (ARRAY_AGG(latitude  ORDER BY ping_ts DESC))[1] AS last_lat,
+        (ARRAY_AGG(longitude ORDER BY ping_ts DESC))[1] AS last_lon
+
     FROM gps_window
     GROUP BY order_id, driver_id, accepted_ts
 ),
+movement_scored AS (
+    SELECT
+        m.*,
+
+        CASE
+            WHEN m.ping_count <= 1 THEN 0::numeric
+            ELSE
+                (
+                    2 * 6371000 * asin(  -- earth radius in meters
+                        sqrt(
+                            power(sin(radians((m.last_lat - m.first_lat) / 2)), 2)
+                            +
+                            cos(radians(m.first_lat)) * cos(radians(m.last_lat))
+                            * power(sin(radians((m.last_lon - m.first_lon) / 2)), 2)
+                        )
+                    )
+                )::numeric
+        END AS movement_meters
+
+    FROM movement m
+)
+
 
 final AS (
     SELECT
@@ -95,7 +117,7 @@ final AS (
             WHEN m.accepted_ts IS NULL THEN 'NO_ACCEPTED_EVENT'
             WHEN m.ping_count = 0 THEN 'NO_GPS_AFTER_ACCEPTED'
             WHEN m.ping_count = 1 THEN 'ONLY_ONE_GPS_PING'
-            WHEN m.movement_proxy = 0 THEN 'NO_MOVEMENT'
+            WHEN m.movement_meters < 50 THEN 'LOW_MOVEMENT_<50M'
             ELSE 'MOVED'
         END AS ghosting_status,
 
@@ -103,11 +125,11 @@ final AS (
             WHEN m.accepted_ts IS NULL THEN NULL
             WHEN m.ping_count = 0 THEN TRUE
             WHEN m.ping_count = 1 THEN TRUE
-            WHEN m.movement_proxy = 0 THEN TRUE
+            WHEN m.movement_proxy < 50 THEN TRUE
             ELSE FALSE
         END AS is_ghosting_candidate
 
-    FROM movement m
+    FROM movement_scored m
 )
 
 SELECT *
