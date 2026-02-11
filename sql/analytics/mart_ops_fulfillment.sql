@@ -91,12 +91,20 @@ final AS (
 
         -- late delivery flag (>45 mins)
         CASE
-            WHEN COALESCE(ev.delivered_ts, ob.delivered_at) IS NOT NULL
-                 AND COALESCE(ev.placed_ts, ob.created_at) IS NOT NULL
-                 AND (EXTRACT(EPOCH FROM (COALESCE(ev.delivered_ts, ob.delivered_at) - COALESCE(ev.placed_ts, ob.created_at))) / 60.0) > 45
+            WHEN COALESCE(ev.delivered_ts, ob.delivered_at) IS NULL THEN NULL
+            WHEN COALESCE(ev.placed_ts, ob.created_at) IS NULL THEN NULL
+            WHEN (EXTRACT(EPOCH FROM (COALESCE(ev.delivered_ts, ob.delivered_at) - COALESCE(ev.placed_ts, ob.created_at))) / 60.0) > 45
             THEN TRUE
             ELSE FALSE
         END AS is_late_delivery_45m,
+
+        CASE
+            WHEN delivery_cycle_minutes IS NULL THEN 'UNKNOWN'
+            WHEN delivery_cycle_minutes <= 30 THEN '0-30'
+            WHEN delivery_cycle_minutes <= 45 THEN '31-45'
+            WHEN delivery_cycle_minutes <= 60 THEN '46-60'
+            ELSE '60+'
+        END AS delivery_time_bucket,
 
         -- cancellation timing (minutes from placed)
         CASE
