@@ -53,7 +53,8 @@ settlement_agg AS (
 
         -- quality signals
         COUNT(*) FILTER (WHERE p.match_status = 'MATCHED') AS matched_settlement_lines,
-        COUNT(*) FILTER (WHERE p.match_status <> 'MATCHED') AS unmatched_settlement_lines
+        COUNT(*) FILTER (WHERE p.is_refund = TRUE)  AS refund_settlement_lines,
+        COUNT(*) FILTER (WHERE p.is_refund = FALSE) AS non_refund_settlement_lines
 
     FROM fact_payment_settlement p
     WHERE p.order_id IS NOT NULL
@@ -83,7 +84,8 @@ final AS (
         (
             COALESCE(sa.settled_net_amount, 0)
             + COALESCE(sa.refund_net_amount, 0) -- refund_net_amount is negative in many processors; if positive, we’ll standardize later
-            - COALESCE(NULL::numeric, 0)        -- driver payout placeholder
+            - COALESCE(driver_payout_amount, 0)
+    
         )::numeric AS net_revenue_provisional
 
     FROM order_base ob
