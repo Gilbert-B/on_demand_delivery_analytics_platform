@@ -23,6 +23,10 @@ Ghosting candidate when:
    - no movement toward pickup area (future enhancement if vendor coords exist)
 
 This is an approximate detection until we have vendor pickup coordinates.
+
+Window: 10 minutes after ACCEPTED
+
+Threshold: <=50m movement in the window (accounts for GPS noise but indicates no real movement)
 */
 
 WITH accepted_events AS (
@@ -86,6 +90,7 @@ movement_scored AS (
 
         CASE
             WHEN m.ping_count <= 1 THEN 0::numeric
+            WHEN m.first_lat IS NULL OR m.last_lat IS NULL OR m.first_lon IS NULL OR m.last_lon IS NULL THEN NULL::numeric
             ELSE
                 (
                     2 * 6371000 * asin(  -- earth radius in meters
