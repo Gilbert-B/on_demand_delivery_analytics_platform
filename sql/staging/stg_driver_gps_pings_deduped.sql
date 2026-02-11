@@ -22,19 +22,21 @@ WITH p AS (
 ranked AS (
     SELECT
         p.*,
+        ROUND(p.latitude, 5)  AS lat_r,
+        ROUND(p.longitude, 5) AS lon_r,
 
         md5(
             concat_ws(
                 '|',
                 p.driver_id::text,
                 p.ping_ts::text,
-                p.latitude::text,
-                p.longitude::text
+                ROUND(p.latitude, 5)::text,
+                ROUND(p.longitude, 5)::text
             )
         ) AS ping_id,
 
         ROW_NUMBER() OVER (
-            PARTITION BY p.driver_id, p.ping_ts, p.latitude, p.longitude
+            PARTITION BY p.driver_id, p.ping_ts, ROUND(p.latitude, 5), ROUND(p.longitude, 5)
             ORDER BY p.ingested_at ASC, p.source_file ASC, p.source_row_number ASC
         ) AS rn
     FROM p

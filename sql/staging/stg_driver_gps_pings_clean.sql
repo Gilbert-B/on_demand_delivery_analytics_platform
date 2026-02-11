@@ -56,4 +56,5 @@ cleaned AS (
 )
 
 SELECT *
-FROM cleaned;
+FROM cleaned
+WHERE ping_ts IS NOT NULL;
