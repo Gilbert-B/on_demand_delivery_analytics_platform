@@ -66,6 +66,13 @@ But NOT:
 unless those timestamps exist separately.
 */
 
+/* Optional milestones if they exist in the source:
+,('ACCEPTED'::text,  o.accepted_at)
+,('ARRIVED_AT_VENDOR'::text, o.arrived_at_vendor_at)
+,('PICKED_UP'::text, o.picked_up_at)
+*/
+
+
 SELECT
     -- stable event identifier (for dedupe + idempotent loads later)
     md5(
