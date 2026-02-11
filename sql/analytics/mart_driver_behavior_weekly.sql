@@ -56,6 +56,17 @@ final AS (
             ELSE (g.ghosted_orders::numeric / g.orders_with_accepted_event::numeric)
         END AS ghosting_rate
 
+
+        CASE
+            WHEN COALESCE(a.active_hours, 0) >= 10 AND COALESCE(g.orders_with_accepted_event, 0) >= 5
+                AND (g.ghosted_orders::numeric / NULLIF(g.orders_with_accepted_event::numeric, 0)) >= 0.2
+              THEN 'HIGH_GHOSTING'
+             WHEN COALESCE(a.active_hours, 0) = 0 AND COALESCE(g.orders_with_accepted_event, 0) = 0
+                THEN 'INACTIVE'
+            ELSE 'OK'
+        END AS driver_week_status
+
+
     FROM availability a
     FULL OUTER JOIN ghosting g
       ON g.driver_id = a.driver_id
