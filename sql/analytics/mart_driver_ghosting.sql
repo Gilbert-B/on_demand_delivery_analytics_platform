@@ -100,7 +100,7 @@ movement_scored AS (
         END AS movement_meters
 
     FROM movement m
-)
+),
 
 
 final AS (
@@ -111,13 +111,13 @@ final AS (
         m.ping_count,
         m.first_ping_ts,
         m.last_ping_ts,
-        m.movement_proxy,
+        m.movement_meters,
 
         CASE
             WHEN m.accepted_ts IS NULL THEN 'NO_ACCEPTED_EVENT'
             WHEN m.ping_count = 0 THEN 'NO_GPS_AFTER_ACCEPTED'
             WHEN m.ping_count = 1 THEN 'ONLY_ONE_GPS_PING'
-            WHEN m.movement_meters < 50 THEN 'LOW_MOVEMENT_<50M'
+            WHEN m.movement_meters <= 50 THEN 'LOW_MOVEMENT_<=50M'
             ELSE 'MOVED'
         END AS ghosting_status,
 
@@ -125,12 +125,13 @@ final AS (
             WHEN m.accepted_ts IS NULL THEN NULL
             WHEN m.ping_count = 0 THEN TRUE
             WHEN m.ping_count = 1 THEN TRUE
-            WHEN m.movement_proxy < 50 THEN TRUE
+            WHEN m.movement_meters <= 50 THEN TRUE
             ELSE FALSE
         END AS is_ghosting_candidate
 
     FROM movement_scored m
 )
+
 
 SELECT *
 FROM final;
